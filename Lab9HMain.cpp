@@ -21,6 +21,10 @@
 #include "images/images.h"
 #include "Entities.h"
 #include "Joystick.h"
+#include "Menu.h"
+
+
+
 // extern "C" void __disable_irq(void);
 // extern "C" void __enable_irq(void);
 extern "C" void TIMG12_IRQHandler(void);
@@ -29,7 +33,7 @@ extern "C" void TIMG12_IRQHandler(void);
 // however, the ADC seems to work on my boards at 80 MHz
 // I suggest you try 80MHz, but if it doesn't work, switch to 40MHz
 void PLL_Init(void){ // set phase lock loop (PLL)
-  // Clock_Init40MHz(); // run this line for 40MHz
+   //Clock_Init40MHz(); // run this line for 40MHz
   Clock_Init80MHz(0);   // run this line for 80MHz
 }
 uint8_t currentZ = 0;
@@ -48,7 +52,13 @@ uint32_t Random(uint32_t n){
 }
 
 
-Player Player1(55, 100, PlayerShip0, 1);
+Player Player1(55, 100, caillou, 1);
+Enemy  Enemy1 (55, 75, SmallEnemy20pointA);
+
+static const int32_t enemySpawnX[5] = { 100, 100,  20, 100,  20 };
+static const int32_t enemySpawnY[5] = { 100,  20,  60,  60,  60 };
+
+#define ENEMY_SPAWN_DELAY  30
 
 void RoutePlayer(uint8_t doorID){
 switch (doorID) {
@@ -58,18 +68,55 @@ switch (doorID) {
     Player1.setY(24);   // Line up the Y coordinates with the door
     break;
   case 3:
-    currentZ = 0;
-    Player1.setX(50);
-    Player1.setY(30);
+    currentZ = 2;
+    Player1.setX(75);
+    Player1.setY(40);
     break;
   case 4:
-    currentZ = 2;
+    currentZ = 0;
     Player1.setX(10);
     Player1.setY(24);
     break;
+  case 5:
+    currentZ = 3;
+    Player1.setX(10);
+    Player1.setY(24);
+    break;
+  case 6:
+    currentZ = 4;
+    Player1.setX(50);
+    Player1.setY(30);
+    break;
+  case 7: 
+    currentZ = 3;
+    Player1.setX(10);
+    Player1.setY(24);
+    break;
+  case 8:
+    currentZ = 0;
+    Player1.setX(10);
+    Player1.setY(24);
+    break;
+  case 9:
+    currentZ = 1;
+    Player1.setX(10);
+    Player1.setY(24);
+    break;
+  case 10:
+    currentZ = 2;
+    Player1.setX(75);
+    Player1.setY(40);
+    break;
+  case 11: 
+    currentZ = 4;
+    Player1.setX(50);
+    Player1.setY(30);
+    break;
+  }
+  Enemy1.SetSpawnDelay(enemySpawnX[currentZ],
+                       enemySpawnY[currentZ],
+                       ENEMY_SPAWN_DELAY);
 }
-}
-
 void DrawStaminaBar(int32_t currentStamina) {
     // Let's make the bar 100 pixels tall, starting at Y = 20, on the right edge (X = 122)
     int32_t barX = 122;
@@ -95,8 +142,23 @@ void DrawStaminaBar(int32_t currentStamina) {
     ST7735_DrawFastHLine(barX - 1, barTopY - 1, barWidth + 2, ST7735_WHITE);
     ST7735_DrawFastHLine(barX - 1, barTopY + barHeight, barWidth + 2, ST7735_WHITE);
 }
-
-
+// show new screen
+static void ShowTaggedScreen(void) {
+    ST7735_FillScreen(ST7735_RED);
+    ST7735_SetCursor(3, 5);
+    ST7735_OutString((char *)"YOU GOT TAGGED!");
+    Clock_Delay1ms(1500);
+ 
+    // Reset player to room 0
+    currentZ = 0;
+    Player1.setX(55);
+    Player1.setY(100);
+ 
+    // Enemy waits a bit before hunting again
+    Enemy1.SetSpawnDelay(enemySpawnX[currentZ],
+                         enemySpawnY[currentZ],
+                         ENEMY_SPAWN_DELAY * 2);   // 6 s grace period
+}
 // games  engine runs at 30Hz
 void TIMG12_IRQHandler(void){uint32_t pos,msg;
   if((TIMG12->CPU_INT.IIDX) == 1){ // this will acknowledge
@@ -114,7 +176,7 @@ void TIMG12_IRQHandler(void){uint32_t pos,msg;
     MyJoy.In();
 
     uint32_t buttons = Switch_In();
-    uint8_t isHoldingBoost = (buttons & 0x01) ? 1 : 0;
+    uint8_t isHoldingBoost = (buttons & 0x04) ? 1 : 0;
 
     uint8_t isBoosting = 0;
     if (isHoldingBoost && Player1.getStamina() > 0) {
@@ -145,11 +207,9 @@ void TIMG12_IRQHandler(void){uint32_t pos,msg;
 
       if(event > 1){
         RoutePlayer(event);
-
-
-        ST7735_FillScreen(ST7735_BLACK); 
+        ST7735_FillScreen(ST7735_BLACK);
         DrawMap(World[currentZ]);
-        DrawFlag = 1;
+        DrawFlag = 2;
       }
 
       if(Player1.getX() != Player1.getPrevX() || Player1.getY() != Player1.getPrevY()){
@@ -160,6 +220,16 @@ void TIMG12_IRQHandler(void){uint32_t pos,msg;
       DrawFlag = 1;
     }
     Player1.updateStamina(isBoosting);
+
+    uint8_t enemyWasAlive = Enemy1.getIsAlive();
+    Enemy1.Update(Player1.getX(), Player1.getY(), World[currentZ]);
+    uint8_t enemyIsAlive  = Enemy1.getIsAlive();
+ 
+    // Trigger redraw whenever enemy position or alive state changes
+    if (enemyIsAlive || (enemyWasAlive != enemyIsAlive)) DrawFlag = 1;
+ 
+    Player1.updateStamina(isBoosting);
+
     GPIOB->DOUTTGL31_0 = GREEN;
   }
 }
@@ -298,13 +368,15 @@ int main4(void){ uint32_t last=0,now;
   Sound_Init();  // initialize sound
   TExaS_Init(ADC0,6,0); // ADC1 channel 6 is PB20, TExaS scope
   __enable_irq();
+
+
   while(1){
     now = Switch_In(); // one of your buttons
     if((last == 0)&&(now == 1)){
-      Sound_Shoot(); // call one of your sounds
+      Sound_Walk(); // call one of your sounds
     }
     if((last == 0)&&(now == 2)){
-      Sound_Killed(); // call one of your sounds
+      Sound_Tag(); // call one of your sounds
     }
     if((last == 0)&&(now == 4)){
       Sound_Explosion(); // call one of your sounds
@@ -312,6 +384,7 @@ int main4(void){ uint32_t last=0,now;
     if((last == 0)&&(now == 8)){
       Sound_Fastinvader1(); // call one of your sounds
     }
+    last = now;
     // modify this to test all your sounds
   }
 }
@@ -321,6 +394,8 @@ int main(void){ // final main
   PLL_Init(); // set bus speed
   LaunchPad_Init();
   ST7735_InitPrintf(INITR_BLACKTAB); // INITR_REDTAB for AdaFruit, INITR_BLACKTAB for HiLetGo
+  ST7735_SetRotation(1);
+  
   ST7735_FillScreen(ST7735_BLACK);
   Switch_Init(); // initialize switches
   LED_Init();    // initialize LED
@@ -328,22 +403,48 @@ int main(void){ // final main
   TExaS_Init(0,0,&TExaS_LaunchPadLogicPB27PB26); // PB27 and PB26
   
   MyJoy.Init();
-    // initialize interrupts on TimerG12 at 30 Hz
+  // initialize interrupts on TimerG12 at 30 Hz
+
+  Menu_Init();
+  Menu_Start();
+  
+
+  ST7735_DrawBitmap(0, 127, backgroun, 160, 128);
+  DrawMap(World[currentZ]);
+  DrawFlag = 1;
+
   TimerG12_IntArm(80000000/30, 2);
   // initialize all data structures
   __enable_irq();
 
-
-  DrawMap(World[currentZ]);
-
-
-  DrawFlag = 1;
   while(1){
     while(DrawFlag == 0) {}
+    uint8_t flag = DrawFlag;
     DrawFlag = 0;
-    
+
+    if(flag == 2){
+        ST7735_DrawBitmap(0, 127, backgroun, 160, 128);
+        DrawMap(World[currentZ]);
+    }
+
+    if(Enemy1.CheckTagged(Player1.getX(), Player1.getY(),
+                          Player1.getWidth(), Player1.getHeight())){
+      __disable_irq();
+      ShowTaggedScreen();
+      ST7735_DrawBitmap(0, 127, backgroun, 160, 128);
+      DrawMap(World[currentZ]);
+      DrawFlag = 1;
+      __enable_irq();
+    }
+
+
     DrawStaminaBar(Player1.getStamina());
+    Enemy1.EnemyErase();
+    Enemy1.EnemyDraw();
+
     Player1.Erase();
     Player1.Draw();
   }
+
+
 }
