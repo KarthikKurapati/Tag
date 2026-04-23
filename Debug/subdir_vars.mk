@@ -6,6 +6,7 @@
 CPP_SRCS += \
 /Users/karthikkurapati/Downloads/MSPM0_ValvanoWare/inc/Clock.cpp \
 /Users/karthikkurapati/Downloads/MSPM0_ValvanoWare/inc/DAC5.cpp \
+../EndScreen.cpp \
 ../Entities.cpp \
 ../FIFO2.cpp \
 ../Joystick.cpp \
@@ -30,6 +31,7 @@ CMD_SRCS += \
 OBJS += \
 ./Clock.o \
 ./DAC5.o \
+./EndScreen.o \
 ./Entities.o \
 ./FIFO2.o \
 ./Joystick.o \
@@ -51,6 +53,7 @@ OBJS += \
 CPP_DEPS += \
 ./Clock.d \
 ./DAC5.d \
+./EndScreen.d \
 ./Entities.d \
 ./FIFO2.d \
 ./Joystick.d \
@@ -72,6 +75,7 @@ CPP_DEPS += \
 OBJS__QUOTED += \
 "Clock.o" \
 "DAC5.o" \
+"EndScreen.o" \
 "Entities.o" \
 "FIFO2.o" \
 "Joystick.o" \
@@ -93,6 +97,7 @@ OBJS__QUOTED += \
 CPP_DEPS__QUOTED += \
 "Clock.d" \
 "DAC5.d" \
+"EndScreen.d" \
 "Entities.d" \
 "FIFO2.d" \
 "Joystick.d" \
@@ -114,6 +119,7 @@ CPP_DEPS__QUOTED += \
 CPP_SRCS__QUOTED += \
 "/Users/karthikkurapati/Downloads/MSPM0_ValvanoWare/inc/Clock.cpp" \
 "/Users/karthikkurapati/Downloads/MSPM0_ValvanoWare/inc/DAC5.cpp" \
+"../EndScreen.cpp" \
 "../Entities.cpp" \
 "../FIFO2.cpp" \
 "../Joystick.cpp" \

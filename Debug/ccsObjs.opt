@@ -1,5 +1,6 @@
 "./Clock.o"
 "./DAC5.o"
+"./EndScreen.o"
 "./Entities.o"
 "./FIFO2.o"
 "./Joystick.o"

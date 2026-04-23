@@ -160,19 +160,38 @@ void Menu_Start(){
         int prevState = state;
 
         if(state == 0){
-            if(input & 0x01){ select--; if(select < 0) select = 0; }
-            if(input & 0x02){ select++; if(select > 1) select = 1; }
+            if(input & 0x01){ 
+                select--; 
+                if(select < 0) 
+                select = 0; 
+            }
+            if(input & 0x02){ 
+                select++; 
+                if(select > 1) 
+                select = 1; 
+            }
             if(input & 0x04){
-                if(select == 1){ state = 1; langSelect = 0; }
+                if(select == 1){ 
+                    state = 1; 
+                    langSelect = 0; 
+                    }
                 if(select == 0){ 
                     ST7735_FillScreen(ST7735_BLACK);
                     ST7735_SetRotation(0);
-                    return; }
+                    return; 
+                    }
             }
         }
         else if(state == 1){
-            if(input & 0x01){ langSelect--; if(langSelect < 0) langSelect = 0; }
-            if(input & 0x02){ langSelect++; if(langSelect > 1) langSelect = 1; }
+            if(input & 0x01){ 
+                langSelect--; 
+                if(langSelect < 0) 
+                langSelect = 0; 
+            }
+            if(input & 0x02){ 
+                langSelect++; 
+                if(langSelect > 1) 
+                langSelect = 1; }
             if(input & 0x04){
                 language = langSelect;
                 state = 0;
@@ -189,75 +208,75 @@ void Menu_Start(){
             if(state == 0){
                 ST7735_SetCursor(2,2);
                 if(language == 0){
-                    ST7735_OutString("TAG");
+                    ST7735_OutString((char *)"Tag");
                 } else {
-                    ST7735_OutString("ETIQUETA");
+                    ST7735_OutString((char *)"ETIQUETA");
                 }
 
                 ST7735_SetCursor(2,4);
                 if(language == 0){
-                    ST7735_OutString("Left is select");
+                    ST7735_OutString((char *)"Left is select");
                 } else {
-                    ST7735_OutString("Presiona izquierda");
+                    ST7735_OutString((char *)"Presiona izquierda");
                 }
 
                 ST7735_SetCursor(2,6);
                 if(select == 0){
                     if(language == 0){
-                        ST7735_OutString(" > Start Game");
+                        ST7735_OutString((char *)" > Start Game");
                     } else {
-                        ST7735_OutString(" > Iniciar Juego");
+                        ST7735_OutString((char *)" > Iniciar Juego");
                     }
                 } else {
                     if(language == 0){
-                        ST7735_OutString("Start Game");
+                        ST7735_OutString((char *)"Start Game");
                     } else {
-                        ST7735_OutString("Iniciar Juego");
+                        ST7735_OutString((char *)"Iniciar Juego");
                     }
                 }
 
                 ST7735_SetCursor(2,8);
                 if(select == 1){
                     if(language == 0){
-                        ST7735_OutString(" > Language");
+                        ST7735_OutString((char *)" > Language");
                     } else {
-                        ST7735_OutString(" > Idioma");
+                        ST7735_OutString((char *)" > Idioma");
                     }
                 } else {
                     if(language == 0){
-                        ST7735_OutString("Language");
+                        ST7735_OutString((char *)"Language");
                     } else {
-                        ST7735_OutString("Idioma");
+                        ST7735_OutString((char *)"Idioma");
                     }
                 }
             }
             else if(state == 1){
                 ST7735_SetCursor(2,2);
                 if(language == 0){
-                    ST7735_OutString("Language");
+                    ST7735_OutString((char *)"Language");
                 } else {
-                    ST7735_OutString("Idioma");
+                    ST7735_OutString((char *)"Idioma");
                 }
 
                 ST7735_SetCursor(2,4);
                 if(language == 0){
-                    ST7735_OutString("Press left to select");
+                    ST7735_OutString((char *)"Press left to select");
                 } else {
-                    ST7735_OutString("Presiona izquierda");
+                    ST7735_OutString((char *)"Presiona izquierda");
                 }
 
                 ST7735_SetCursor(2,6);
                 if(langSelect == 0){
-                    ST7735_OutString(" > English");
+                    ST7735_OutString((char *)" > English");
                 } else {
-                    ST7735_OutString("English");
+                    ST7735_OutString((char *)"English");
                 }
 
                 ST7735_SetCursor(2,8);
                 if(langSelect == 1){
-                    ST7735_OutString(" > Spanish");
+                    ST7735_OutString((char *)" > Spanish");
                 } else {
-                    ST7735_OutString("Spanish");
+                    ST7735_OutString((char *)"Spanish");
                 }
             }
         }

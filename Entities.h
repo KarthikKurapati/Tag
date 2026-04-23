@@ -38,15 +38,16 @@ class Player : public Sprite {
     int32_t maxStamina;   
     int32_t prevStamina;
     uint8_t recharge;
-    uint8_t BFSMove(int32_t goalPixelX, int32_t goalPixelY, const uint8_t map[][COLS], uint8_t speed);
+    uint8_t BFSMove(int32_t goalPixelX, int32_t goalPixelY,  uint8_t map[][COLS], uint8_t speed);
 
   public:
     Player(int32_t startX, int32_t startY, const uint16_t *img, uint8_t taggerStatus);
     void Tagged();
-    uint8_t Move(int32_t dx, int32_t dy, const uint8_t map[][COLS]);
+    uint8_t Move(int32_t dx, int32_t dy,  uint8_t map[][COLS]);
     void updateStamina(uint8_t isBoosting);
     int32_t getStamina();
     int32_t getPrevStamina();
+    void setStamina(uint32_t stamina);
 };
 
 class Enemy : public Sprite {
@@ -55,17 +56,20 @@ private:
     uint8_t  prevIsAlive;
     uint8_t  spawnDelay;
     uint8_t  moveTimer;
+    uint8_t moveInterval;
+    uint8_t  stuckTimer;
  
-    void Chase(int32_t playerX, int32_t playerY, const uint8_t map[][COLS]);
+    void Chase(int32_t playerX, int32_t playerY, uint8_t map[][COLS]);
  
   public:
+  
     Enemy(int32_t startX, int32_t startY, const uint16_t *img);
  
     // 30hz, use to change number of ticks 
     void SetSpawnDelay(int32_t spawnX, int32_t spawnY, uint8_t delayFrames);
  
     // handles the chasing
-    void Update(int32_t playerX, int32_t playerY, const uint8_t map[][COLS]);
+    void Update(int32_t playerX, int32_t playerY, uint8_t map[][COLS]);
  
     // returns 1 if enemy is tagged
     uint8_t CheckTagged(int32_t playerX, int32_t playerY,
@@ -74,6 +78,7 @@ private:
     // erase / draw
     void EnemyErase(void);
     void EnemyDraw(void);
+    void SetMoveInterval(uint8_t interval);
  
     uint8_t getIsAlive();
     uint8_t getPrevIsAlive();

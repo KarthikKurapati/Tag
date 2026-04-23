@@ -2,7 +2,7 @@
 #include "Sound.h"
 #include "sounds/sounds.h"
 
-uint8_t CheckCollision(int32_t next_x, int32_t next_y, int32_t width, int32_t height, const uint8_t map[][COLS]) {
+uint8_t CheckCollision(int32_t next_x, int32_t next_y, int32_t width, int32_t height,  uint8_t map[][COLS]) {
     uint8_t touchedTile = 0;
     int32_t left = next_x;
     int32_t right = next_x + (width - 1); 
@@ -66,7 +66,7 @@ Player::Player(int32_t startX, int32_t startY, const uint16_t *img,uint8_t tagge
     maxStamina = 100;
     recharge = 0;
 }
-uint8_t Player::Move(int32_t dx, int32_t dy, const uint8_t map[ROWS][COLS]) {
+uint8_t Player::Move(int32_t dx, int32_t dy,  uint8_t map[ROWS][COLS]) {
     prevX = x;
     prevY = y;
     int32_t proposed_x = x + dx;
@@ -130,15 +130,25 @@ void Player::updateStamina(uint8_t isBoosting) {
         }
     }
 }
+
+void Player::setStamina(uint32_t stamina){
+    this->stamina = stamina;
+}
+
+
+
+
 // -------------------------------------------------------
 //  Enemy implementation
 // -------------------------------------------------------
 Enemy::Enemy(int32_t startX, int32_t startY, const uint16_t *img)
     : Sprite(startX, startY, 18, 8, img) {
-    isAlive      = 0;   // starts inactive until first SetSpawnDelay call
-    prevIsAlive  = 0;
-    spawnDelay   = 0;
-    moveTimer    = 0;
+    isAlive = 0;   // starts inactive until first SetSpawnDelay call
+    prevIsAlive = 0;
+    spawnDelay = 0;
+    moveTimer = 0;
+    moveInterval = 3;
+    stuckTimer   = 0;
 }
  
 void Enemy::SetSpawnDelay(int32_t spawnX, int32_t spawnY, uint8_t delayFrames) {
@@ -149,6 +159,9 @@ void Enemy::SetSpawnDelay(int32_t spawnX, int32_t spawnY, uint8_t delayFrames) {
     setY(spawnY);
     moveTimer   = 0;
 }
+void Enemy::SetMoveInterval(uint8_t interval) {
+    moveInterval = interval;
+}
  
 // ---------------------------------------------------------------
 //  Chase — greedy pathfinder:
@@ -157,33 +170,76 @@ void Enemy::SetSpawnDelay(int32_t spawnX, int32_t spawnY, uint8_t delayFrames) {
 //   3. If diagonal Y-axis is blocked, slide on X only.
 //   This lets the enemy hug walls and navigate corridors naturally.
 // ---------------------------------------------------------------
-void Enemy::Chase(int32_t playerX, int32_t playerY,
-                  const uint8_t map[][COLS]) {
+void Enemy::Chase(int32_t playerX, int32_t playerY, uint8_t map[][COLS]) {
     prevX = x;
     prevY = y;
- 
-    // Determine direction signs toward player
+
     int32_t sx = 0, sy = 0;
     if      (playerX > x) sx =  2;
     else if (playerX < x) sx = -2;
     if      (playerY > y) sy =  2;
     else if (playerY < y) sy = -2;
- 
-    // Attempt X movement
+
     if (sx != 0) {
         uint8_t hitX = CheckCollision(x + sx, y, width, height, map);
         if (hitX != 1) x += sx;
     }
- 
-    // Attempt Y movement
     if (sy != 0) {
         uint8_t hitY = CheckCollision(x, y + sy, width, height, map);
         if (hitY != 1) y += sy;
     }
+
+    // --- Wall breaking logic ---
+    if (x == prevX && y == prevY) {
+        // Completely stuck this frame
+        stuckTimer++;
+
+        #define BREAK_THRESHOLD 15   // 1.5 seconds at 30Hz (every 2nd frame)
+
+        if (stuckTimer >= BREAK_THRESHOLD) {
+            stuckTimer = 0;
+
+            // Find which adjacent wall tile the enemy is pressing against
+            // Check X direction first, then Y
+            if (sx != 0) {
+                int32_t checkX = x + sx;
+                int32_t col = (sx > 0) ? (checkX + width - 1) / 8 : checkX / 8;
+                int32_t rowTop    = (y - height + 1) / 8;
+                int32_t rowBottom = y / 8;
+
+                for (int32_t row = rowTop; row <= rowBottom; row++) {
+                    if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+                        if (map[row][col] == 1) {
+                            map[row][col] = 0;
+                            // Erase the tile visually
+                            ST7735_FillRect(col * 8, row * 8, 8, 8, ST7735_BLACK);
+                        }
+                    }
+                }
+            }
+            if (sy != 0) {
+                int32_t checkY = y + sy;
+                int32_t row = (sy > 0) ? checkY / 8 : (checkY - height + 1) / 8;
+                int32_t colLeft  = x / 8;
+                int32_t colRight = (x + width - 1) / 8;
+
+                for (int32_t col = colLeft; col <= colRight; col++) {
+                    if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+                        if (map[row][col] == 1) {
+                            map[row][col] = 0;
+                            ST7735_FillRect(col * 8, row * 8, 8, 8, ST7735_BLACK);
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        stuckTimer = 0;   // moving fine — reset
+    }
 }
  
 void Enemy::Update(int32_t playerX, int32_t playerY,
-                   const uint8_t map[][COLS]) {
+                    uint8_t map[][COLS]) {
     prevIsAlive = isAlive;
  
     // ---- Countdown phase ----
@@ -199,7 +255,7 @@ void Enemy::Update(int32_t playerX, int32_t playerY,
     // ---- Active chase phase ----
     // Throttle: move every 2nd frame so enemy is slightly slower than player
     moveTimer++;
-    if (moveTimer < 2) return;
+    if (moveTimer < moveInterval) return;
     moveTimer = 0;
  
     Chase(playerX, playerY, map);
